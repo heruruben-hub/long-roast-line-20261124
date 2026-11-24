@@ -14,17 +14,41 @@ import sys
 LINE = "My agent needs three paragraphs to say 'I don't know', then cites a source that doesn't exist."
 
 
+def check_not_empty(line: str) -> str | None:
+    """Return an error message if the line is empty or only whitespace."""
+    if not line or line.strip() == "":
+        return "gate failed: line is empty or only whitespace"
+    return None
+
+
+def check_single_line(line: str) -> str | None:
+    """Return an error message if the line contains a line break."""
+    if "\n" in line or "\r" in line:
+        return "gate failed: line must be a single line"
+    return None
+
+
+def check_length(line: str) -> str | None:
+    """Return an error message if the line exceeds the 200-char limit."""
+    if len(line) > 200:
+        return f"gate failed: line is {len(line)} chars, over the 200 limit"
+    return None
+
+
+def validate(line: str) -> str | None:
+    """Run each gate check in turn; return the first failure, else None."""
+    for check in (check_not_empty, check_single_line, check_length):
+        error = check(line)
+        if error is not None:
+            return error
+    return None
+
+
 def main() -> int:
     # Gate: exactly one line, 1-200 characters, not only whitespace.
-    if not LINE or LINE.strip() == "":
-        print("gate failed: line is empty or only whitespace", file=sys.stderr)
-        return 1
-    if "\n" in LINE or "\r" in LINE:
-        print("gate failed: line must be a single line", file=sys.stderr)
-        return 1
-    if len(LINE) > 200:
-        print(f"gate failed: line is {len(LINE)} chars, over the 200 limit",
-              file=sys.stderr)
+    error = validate(LINE)
+    if error is not None:
+        print(error, file=sys.stderr)
         return 1
 
     out_path = os.environ.get("ENTRY_OUTPUT", "/output/entry.txt")
